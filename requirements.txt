@@ -1,0 +1,33 @@
+# =============================================================================
+# AI-Powered Push-Up Counter — Python dependencies
+# Verified to resolve together on Python 3.11 (see README "Installation").
+# =============================================================================
+
+# --- Core computer vision / numerics -----------------------------------------
+numpy>=1.26,<3
+opencv-python>=4.10,<5
+pandas>=2.1,<4
+
+# --- Pose estimation: RF-DETR Keypoint ---------------------------------------
+# `rfdetr` pulls in torch + torchvision + supervision automatically.
+# The keypoint (pose) preview model `RFDETRKeypointPreview` requires >=1.8.1.
+# CPU-only torch:  pip install torch --index-url https://download.pytorch.org/whl/cpu
+rfdetr>=1.8.1,<2
+supervision>=0.29,<0.31
+
+# --- Configuration -----------------------------------------------------------
+PyYAML>=6.0,<7
+python-dotenv>=1.0,<2
+
+# --- Dashboard & visualization ----------------------------------------------
+streamlit>=1.35,<2
+plotly>=6,<8
+Pillow>=9.4          # animated-GIF export (also a Streamlit dependency)
+
+# --- Optional: REST API (only if you run api_server.py) ----------------------
+# fastapi>=0.110,<1
+# uvicorn[standard]>=0.29,<1
+# python-multipart>=0.0.9
+
+# --- Testing & code quality --------------------------------------------------
+pytest>=8,<10
