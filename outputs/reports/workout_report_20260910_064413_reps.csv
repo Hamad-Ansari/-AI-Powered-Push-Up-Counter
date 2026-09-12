@@ -1,0 +1,3 @@
+index,timestamp,valid,reason,code,duration_s,min_elbow_angle,max_elbow_angle,elbow_travel,max_alignment_deviation,max_arm_diff,tracking_ratio,form_score
+1,2.1666666666666665,True,Valid repetition,valid,0.867,89.52,157.63,68.11,1.64,7.04,1.0,58.39250395031206
+2,4.666666666666667,True,Valid repetition,valid,0.867,88.89,157.5,68.6,2.04,7.85,1.0,56.65975490417458
