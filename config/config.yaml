@@ -1,0 +1,167 @@
+# =============================================================================
+# AI-Powered Push-Up Counter - Master configuration
+# -----------------------------------------------------------------------------
+# Every tunable value in the application lives here. Values can be overridden by
+# environment variables (see .env.example) and, for the interactive session, by
+# the Streamlit sidebar. Precedence: env vars > config.yaml > dataclass defaults.
+# =============================================================================
+
+# ------------------------------- Pose model ----------------------------------
+model:
+  # "rf-detr" uses RFDETRKeypointPreview from the official `rfdetr` package
+  # (COCO 17-keypoint preview checkpoint, Apache-2.0).
+  # "demo" is a dependency-free synthetic pose source used for CI, tests and the
+  # in-app demo mode. It produces the exact same standardized keypoint contract.
+  engine: "rf-detr"
+  name: "rf-detr-keypoint-preview"
+  class_name: "RFDETRKeypointPreview"
+  # Optional local checkpoint. Empty => the package downloads and caches
+  # "rf-detr-keypoint-preview-xlarge.pth" automatically on first use.
+  pretrain_weights: ""
+  confidence_threshold: 0.5        # per-keypoint confidence gate
+  detection_threshold: 0.5         # per-instance (person) score gate
+  resolution: 576                  # native model input resolution
+  # "auto" | "cuda" | "cpu"
+  device: "auto"
+  # Show a native OpenCV window in addition to the Streamlit dashboard.
+  # Useful when running on a local desktop machine.
+  preview_window: false
+
+# --------------------------- Person selection --------------------------------
+person_selection:
+  # Composite score used to pick the primary subject when >1 person is detected.
+  weights:
+    confidence: 0.5                # highest pose/detection confidence first
+    size: 0.35                     # largest bounding box
+    centrality: 0.15               # closest to the centre of the frame
+  # Temporal stability: keep tracking the same subject unless a new candidate
+  # wins by at least this margin (prevents identity flicker between frames).
+  tracking_iou_threshold: 0.30
+  tracking_margin: 0.10
+  max_lost_frames: 15              # frames to hold identity after a miss
+
+# ------------------------------- Push-up FSM ---------------------------------
+pushup:
+  up_threshold: 150                # elbow angle >= this  => UP
+  down_threshold: 90               # elbow angle <= this  => DOWN
+  stable_frames: 3                 # consecutive frames required to confirm a state
+  min_rep_duration: 0.55           # seconds; faster than this => noise / invalid
+  max_cycle_duration: 12.0         # seconds; longer than this => abandoned cycle
+  min_elbow_bend: 25               # minimum total elbow travel for a real rep
+  require_down_before_up: true
+
+# --------------------------- Invalid-rep filtering ----------------------------
+validation:
+  min_depth_angle: 100             # rep invalid if the elbow never went <= this
+  max_alignment_deviation: 35      # degrees away from a straight 180 deg body
+  max_arm_asymmetry: 25            # degrees of left/right elbow difference
+  min_tracking_ratio: 0.70         # fraction of cycle frames with a valid pose
+  max_cadence_rpm: 0               # 0 disables the "too fast" rejection rule
+
+# --------------------------------- Smoothing ----------------------------------
+smoothing:
+  enabled: true
+  method: "moving_average"         # "moving_average" | "ema"
+  window_size: 5
+  ema_alpha: 0.3
+
+# ------------------------------ Movement analysis -----------------------------
+movement:
+  min_phase_duration: 0.15         # seconds; shorter phases are treated as jitter
+  velocity_window: 5               # frames used for the angular-velocity estimate
+
+# --------------------------------- Posture ------------------------------------
+posture:
+  alignment_tolerance: 12          # |angle - 180| considered perfect
+  alignment_max_deviation: 35      # |angle - 180| that maps to a score of 0
+  depth_full_angle: 90             # elbow angle that scores 100 on depth
+  depth_zero_angle: 160            # elbow angle that scores 0 on depth
+  symmetry_threshold: 20           # elbow asymmetry that triggers feedback
+  hips_high_angle: 150             # hip angle below this => hips too high
+  hips_low_angle: 205              # hip angle above this => hips sagging
+  min_keypoint_confidence: 0.5
+
+# -------------------------------- Form scoring --------------------------------
+form:
+  weights:
+    depth: 30
+    alignment: 30
+    symmetry: 20
+    control: 20
+  bands:
+    excellent: 90
+    good: 75
+    needs_improvement: 60
+  control:
+    ideal_cycle_duration: 2.5      # seconds per rep is considered controlled
+    min_cycle_duration: 0.8
+    jerk_free_velocity: 60         # deg/s above which control starts to suffer
+
+# -------------------------------- Skeleton / HUD ------------------------------
+visualization:
+  skeleton:
+    line_thickness: 3
+    joint_radius: 5
+    highlight_radius: 7
+    draw_confidence_labels: false
+  hud:
+    enabled: true
+    base_width: 1280               # HUD is scaled relative to this width
+    opacity: 0.62                  # panel background opacity
+    font_scale: 0.6
+    feedback_history: 3            # stacked feedback toasts
+    show_angle_labels: true
+    show_bottom_telemetry: true
+  # Status colours (hex, converted to BGR for OpenCV at load time).
+  colors:
+    good: "#22c55e"
+    warning: "#facc15"
+    bad: "#ef4444"
+    tracking: "#3b82f6"
+    accent: "#22d3ee"
+    neutral: "#94a3b8"
+    panel: "#0b1220"
+    panel_border: "#1f2a44"
+    text: "#e2e8f0"
+    text_dim: "#94a3b8"
+    skeleton: "#22d3ee"
+    skeleton_invalid: "#64748b"
+    skeleton_highlight: "#f59e0b"
+
+# ---------------------------------- Video -------------------------------------
+video:
+  output_fps: 30                   # used when the source FPS is unavailable
+  save_processed_video: true
+  save_original_video: false
+  fourcc: "mp4v"
+  fallback_fourccs: ["avc1", "XVID", "MJPG"]
+  display_width: 960               # width of the frame pushed to Streamlit
+  loop_webcam_demo: true
+  # Pace demo/video preview to the source frame rate (real-time feel).
+  realtime_pacing: true
+  # Processed-video container: "mp4" | "avi" | "gif".
+  export_format: "mp4"
+
+# --------------------------------- Analytics ----------------------------------
+analytics:
+  history_stride: 2                # keep 1 of every N frames for the charts
+  max_history_points: 1500
+  rolling_form_window: 30          # frames for the rolling form-score average
+  chart_height: 300
+
+# ---------------------------------- Output ------------------------------------
+output:
+  base_dir: "outputs"
+  screenshots_dir: "outputs/screenshots"
+  videos_dir: "outputs/videos"
+  reports_dir: "outputs/reports"
+  screenshot_format: "jpg"
+  video_name_template: "pushup_analysis_{timestamp}.mp4"
+  report_formats: ["json", "csv", "md"]
+
+# --------------------------------- Runtime ------------------------------------
+runtime:
+  log_level: "INFO"
+  log_file: "outputs/app.log"
+  seed: 42
+  developer_mode: false
